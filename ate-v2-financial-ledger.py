@@ -114,43 +114,82 @@ def show_transactions():
 
 def show_reports():
     st.title("Financial Reports")
-
-    transactions = st.session_state.transactions
-
-    if not transactions.empty:
-        # Filter options
-        st.subheader("Filter Transactions")
-        date_range = st.date_input("Select Date Range", [datetime(2023, 1, 1), datetime.today()])
-
-        filtered_transactions = transactions[
-            (pd.to_datetime(transactions['Date']) >= pd.to_datetime(date_range[0])) &
-            (pd.to_datetime(transactions['Date']) <= pd.to_datetime(date_range[1]))
-        ]
-
-        # Category breakdown
-        st.subheader("Category Analysis")
-        fig_category = px.pie(
-            filtered_transactions, values='Debit', names='Category', title='Expenses by Category'
-        )
-        st.plotly_chart(fig_category, use_container_width=True)
-
+    
+    # Check if there are any transactions
+    if len(st.session_state.transactions) == 0:
+        st.warning("No transactions available for reporting.")
+        return
+    
+    # Validate required columns
+    required_columns = ['Date', 'Debit', 'Credit']
+    missing_columns = [col for col in required_columns if col not in st.session_state.transactions.columns]
+    if missing_columns:
+        st.error(f"Missing required columns for reporting: {', '.join(missing_columns)}")
+        return
+    
+    # Prepare data for reporting
+    monthly_data = st.session_state.transactions.copy()
+    
+    # Convert dates and handle errors
+    try:
+        monthly_data['Date'] = pd.to_datetime(monthly_data['Date'], errors='coerce')
+        monthly_data = monthly_data.dropna(subset=['Date'])
+        monthly_data['Month'] = monthly_data['Date'].dt.strftime('%Y-%m')
+    except Exception as e:
+        st.error(f"Error processing transaction dates: {e}")
+        return
+    
+    # Calculate monthly summaries
+    try:
+        monthly_summary = monthly_data.groupby('Month').agg({
+            'Debit': 'sum',
+            'Credit': 'sum'
+        }).reset_index()
+    except Exception as e:
+        st.error(f"Error calculating monthly summaries: {e}")
+        return
+    
+    if monthly_summary.empty:
+        st.warning("No data available for the selected period.")
+        return
+    
+    # Display summary visualizations
+    try:
         # Monthly trends
         st.subheader("Monthly Trends")
-        filtered_transactions['Month'] = pd.to_datetime(filtered_transactions['Date']).dt.strftime('%Y-%m')
-        monthly_summary = filtered_transactions.groupby('Month').agg({'Debit': 'sum', 'Credit': 'sum'}).reset_index()
-
         fig_monthly = px.bar(
-            monthly_summary, x='Month', y=['Debit', 'Credit'], title='Monthly Debit vs Credit', barmode='group'
+            monthly_summary,
+            x='Month',
+            y=['Debit', 'Credit'],
+            title='Monthly Debit vs Credit',
+            barmode='group'
         )
         st.plotly_chart(fig_monthly, use_container_width=True)
-
-        # Export option
-        st.subheader("Export Filtered Transactions")
-        if st.button("Export to CSV"):
-            filtered_transactions.to_csv("filtered_transactions.csv", index=False)
-            st.success("Filtered transactions exported successfully!")
-    else:
-        st.info("No transactions available for reporting.")
+        
+        # Category breakdown
+        st.subheader("Category Analysis")
+        category_summary = monthly_data.groupby('Category')['Debit'].sum().reset_index()
+        if not category_summary.empty:
+            fig_category = px.pie(
+                category_summary,
+                values='Debit',
+                names='Category',
+                title='Expenses by Category'
+            )
+            st.plotly_chart(fig_category, use_container_width=True)
+        
+    except Exception as e:
+        st.error(f"Error generating visualizations: {e}")
+        return
+    
+    # Export functionality
+    st.subheader("Export Data")
+    if st.button("Export to CSV"):
+        try:
+            monthly_data.to_csv("transaction_report.csv", index=False)
+            st.success("Report exported successfully!")
+        except Exception as e:
+            st.error(f"Error exporting data: {e}")
 
 if __name__ == "__main__":
     main()
