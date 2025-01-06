@@ -5,7 +5,7 @@ def main():
     st.subheader("Explore Tools and Solutions for Efficient Project Management")
 
     # Sidebar for navigation
-    menu = ["Home", "Product Categories", "Solution Guidance", "Contact Sales"]
+    menu = ["Home", "Product Categories", "Solution Guidance"]
     choice = st.sidebar.selectbox("Navigation", menu)
 
     if choice == "Home":
@@ -14,8 +14,6 @@ def main():
         product_categories()
     elif choice == "Solution Guidance":
         solution_guidance()
-    elif choice == "Contact Sales":
-        contact_sales()
 
 def home_page():
     st.write("Welcome to the Project Management Application. This platform provides you with tools and solutions to take your business to the next level. Browse our product categories or get customized guidance to streamline your operations.")
@@ -45,7 +43,6 @@ def product_categories():
         with st.expander(category):
             st.write(description)
 
-
 def solution_guidance():
     st.header("Solution Guidance")
     st.write("Let us guide you to the best solutions for your needs. Select the area you want to improve, and we’ll suggest relevant tools and strategies.")
@@ -61,19 +58,6 @@ def solution_guidance():
         st.write("Enhance customer loyalty and sales with Retail Management Systems and Digital Commerce tools.")
     elif selected_area == "Shop Floor Operations":
         st.write("Empower your workforce with Manufacturing Execution Software and real-time data capture tools.")
-
-def contact_sales():
-    st.header("Contact Sales")
-    st.write("Have questions or need more information? Connect with our sales team for personalized assistance.")
-
-    with st.form("contact_form"):
-        name = st.text_input("Name")
-        email = st.text_input("Email")
-        message = st.text_area("Message")
-        submitted = st.form_submit_button("Submit")
-
-        if submitted:
-            st.success(f"Thank you {name}, your message has been sent! We will contact you at {email}.")
 
 if __name__ == "__main__":
     main()
