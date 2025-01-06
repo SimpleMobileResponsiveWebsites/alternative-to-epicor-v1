@@ -121,48 +121,56 @@ def show_reports():
         return
     
     # Validate required columns
-    required_columns = ['Date', 'Debit', 'Credit']
+    required_columns = ['Date', 'Debit', 'Credit', 'Category']
     missing_columns = [col for col in required_columns if col not in st.session_state.transactions.columns]
     if missing_columns:
         st.error(f"Missing required columns for reporting: {', '.join(missing_columns)}")
         return
     
     # Prepare data for reporting
-    monthly_data = st.session_state.transactions.copy()
-    
-    # Convert dates and handle errors
     try:
-        monthly_data['Date'] = pd.to_datetime(monthly_data['Date'], errors='coerce')
+        monthly_data = st.session_state.transactions.copy()
+        
+        # Convert dates
+        monthly_data['Date'] = pd.to_datetime(monthly_data['Date'])
         monthly_data = monthly_data.dropna(subset=['Date'])
+        
+        # Create month column
         monthly_data['Month'] = monthly_data['Date'].dt.strftime('%Y-%m')
-    except Exception as e:
-        st.error(f"Error processing transaction dates: {e}")
-        return
-    
-    # Calculate monthly summaries
-    try:
+        
+        # Ensure numeric types for financial columns
+        monthly_data['Debit'] = pd.to_numeric(monthly_data['Debit'], errors='coerce')
+        monthly_data['Credit'] = pd.to_numeric(monthly_data['Credit'], errors='coerce')
+        monthly_data = monthly_data.fillna(0)
+        
+        # Calculate monthly summaries
         monthly_summary = monthly_data.groupby('Month').agg({
             'Debit': 'sum',
             'Credit': 'sum'
         }).reset_index()
-    except Exception as e:
-        st.error(f"Error calculating monthly summaries: {e}")
-        return
-    
-    if monthly_summary.empty:
-        st.warning("No data available for the selected period.")
-        return
-    
-    # Display summary visualizations
-    try:
-        # Monthly trends
+        
+        if monthly_summary.empty:
+            st.warning("No valid data available for the selected period.")
+            return
+        
+        # Convert wide to long format for plotting
+        monthly_plot_data = pd.melt(
+            monthly_summary,
+            id_vars=['Month'],
+            value_vars=['Debit', 'Credit'],
+            var_name='Type',
+            value_name='Amount'
+        )
+        
+        # Display monthly trends
         st.subheader("Monthly Trends")
         fig_monthly = px.bar(
-            monthly_summary,
+            monthly_plot_data,
             x='Month',
-            y=['Debit', 'Credit'],
+            y='Amount',
+            color='Type',
             title='Monthly Debit vs Credit',
-            barmode='group'
+            labels={'Amount': 'Amount ($)', 'Month': 'Month'},
         )
         st.plotly_chart(fig_monthly, use_container_width=True)
         
@@ -177,9 +185,9 @@ def show_reports():
                 title='Expenses by Category'
             )
             st.plotly_chart(fig_category, use_container_width=True)
-        
+            
     except Exception as e:
-        st.error(f"Error generating visualizations: {e}")
+        st.error(f"Error processing data: {str(e)}")
         return
     
     # Export functionality
