@@ -28,7 +28,7 @@ Installation
 
 Clone this repository:
 
-git clone https://github.com/your-repo/financial-ledger.git
+git clone [https://github.com/your-repo/financial-ledger.git](https://github.com/SimpleMobileResponsiveWebsites/alternative-to-epicor-v1/)
 cd financial-ledger
 
 Install the required Python packages:
