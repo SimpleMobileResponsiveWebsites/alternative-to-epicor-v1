@@ -99,9 +99,9 @@ def show_transactions():
     with tab2:
         transactions = st.session_state.transactions
         if not transactions.empty:
-            # Display the transactions with delete button
+            # Display the transactions with delete button inline with the record
             for index, row in transactions.iterrows():
-                col1, col2, col3 = st.columns([4, 3, 1])
+                col1, col2, col3, col4 = st.columns([3, 4, 2, 1])
                 with col1:
                     st.write(row['Date'].strftime('%Y-%m-%d'))
                 with col2:
@@ -109,6 +109,8 @@ def show_transactions():
                 with col3:
                     # Display debit/credit as needed
                     st.write(f"${row['Debit'] if row['Debit'] > 0 else row['Credit']:.2f}")
+                with col4:
+                    # Add delete button in the last column
                     delete_button = st.button(f"Delete", key=f"delete_{index}")
 
                     if delete_button:
