@@ -4,10 +4,8 @@ from datetime import datetime
 import plotly.express as px
 import os
 
-# File for storing transactions
 DATA_FILE = "transactions.csv"
 
-# Column definitions with their types
 COLUMN_TYPES = {
     'Date': 'datetime64[ns]',
     'Description': 'string',
@@ -25,8 +23,7 @@ def load_transactions():
         df = df.astype(COLUMN_TYPES, errors='ignore')
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
         return df
-    else:
-        return pd.DataFrame(columns=COLUMN_TYPES.keys())
+    return pd.DataFrame(columns=COLUMN_TYPES.keys())
 
 # Save transactions
 def save_transactions(transactions):
@@ -36,18 +33,6 @@ def save_transactions(transactions):
 def recalculate_balance(df):
     df['Balance'] = df['Credit'].cumsum() - df['Debit'].cumsum()
     return df
-
-# Validate uploaded data
-def validate_upload(df):
-    missing_cols = set(COLUMN_TYPES.keys()) - set(df.columns)
-    if missing_cols:
-        return False, [f"Missing required columns: {', '.join(missing_cols)}"]
-    try:
-        df = df.astype(COLUMN_TYPES, errors='ignore')
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-        return True, []
-    except Exception as e:
-        return False, [str(e)]
 
 def main():
     st.set_page_config(page_title="Financial Ledger", layout="wide")
@@ -67,7 +52,6 @@ def main():
 def show_dashboard():
     st.title("Dashboard")
     transactions = st.session_state.transactions
-
     if transactions.empty:
         st.info("No transactions available.")
         return
@@ -81,7 +65,7 @@ def show_dashboard():
         st.metric("Total Credits", f"${transactions['Credit'].sum():,.2f}")
 
     st.subheader("Balance Over Time")
-    fig = px.line(transactions, x='Date', y='Balance', title='Balance Over Time', labels={'Balance': 'Balance ($)', 'Date': 'Date'})
+    fig = px.line(transactions, x='Date', y='Balance', title='Balance Over Time')
     st.plotly_chart(fig, use_container_width=True)
 
 def show_transactions():
@@ -127,7 +111,6 @@ def show_transactions():
 def show_reports():
     st.title("Reports")
     transactions = st.session_state.transactions
-
     if transactions.empty:
         st.warning("No transactions available for reports.")
         return
@@ -139,8 +122,7 @@ def show_reports():
     }).reset_index()
 
     st.subheader("Monthly Trends")
-    fig = px.bar(monthly_summary, x='Month', y=['Debit', 'Credit'], barmode='group',
-                 title='Monthly Debit vs Credit', labels={'value': 'Amount ($)', 'Month': 'Month'})
+    fig = px.bar(monthly_summary, x='Month', y=['Debit', 'Credit'], barmode='group', title='Monthly Debit vs Credit')
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Category Breakdown")
