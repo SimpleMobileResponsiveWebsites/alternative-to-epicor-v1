@@ -138,7 +138,17 @@ def show_reports():
         st.warning("No transactions available for reports.")
         return
 
+    # Ensure 'Date' column is in datetime format
+    if not pd.api.types.is_datetime64_any_dtype(transactions['Date']):
+        transactions['Date'] = pd.to_datetime(transactions['Date'], errors='coerce')
+
+    # Drop rows with invalid dates (NaT)
+    transactions = transactions.dropna(subset=['Date'])
+
+    # Extract the month as a period
     transactions['Month'] = transactions['Date'].dt.to_period('M').astype(str)
+
+    # Monthly summary report
     monthly_summary = transactions.groupby('Month').agg({
         'Debit': 'sum',
         'Credit': 'sum'
@@ -148,6 +158,7 @@ def show_reports():
     fig = px.bar(monthly_summary, x='Month', y=['Debit', 'Credit'], barmode='group', title='Monthly Debit vs Credit')
     st.plotly_chart(fig, use_container_width=True)
 
+    # Category breakdown report
     st.subheader("Category Breakdown")
     category_summary = transactions.groupby('Category')['Debit'].sum().reset_index()
     fig = px.pie(category_summary, values='Debit', names='Category', title='Expenses by Category')
