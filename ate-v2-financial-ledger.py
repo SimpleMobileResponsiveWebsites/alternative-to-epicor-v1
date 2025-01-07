@@ -99,24 +99,12 @@ def show_transactions():
     with tab2:
         transactions = st.session_state.transactions
         if not transactions.empty:
-            transactions = transactions[(transactions['Debit'] != 0) | (transactions['Credit'] != 0)]  # Filter out zero transactions
-
-            # Display transaction table with delete buttons
-            for idx, row in transactions.iterrows():
-                col1, col2, col3 = st.columns([4, 1, 1])
-                with col1:
-                    st.text(f"{row['Date'].strftime('%Y-%m-%d')} - {row['Description']} ({row['Category']})")
-                with col2:
-                    st.text(f"${row['Debit']:.2f}" if row['Debit'] > 0 else f"${row['Credit']:.2f}")
-                with col3:
-                    if st.button(f"Delete {idx}", key=f"delete_{idx}"):
-                        # Remove the selected transaction and update balance
-                        st.session_state.transactions = st.session_state.transactions.drop(idx)
-                        st.session_state.transactions = recalculate_balance(st.session_state.transactions)
-                        save_transactions(st.session_state.transactions)
-                        st.success("Transaction deleted successfully!")
-                        st.experimental_rerun()
-
+            st.dataframe(transactions.style.format({
+                'Date': lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else '',
+                'Debit': '${:,.2f}',
+                'Credit': '${:,.2f}',
+                'Balance': '${:,.2f}'
+            }), use_container_width=True)
         else:
             st.info("No transactions available.")
 
